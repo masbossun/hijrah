@@ -1,16 +1,20 @@
 import 'package:feather_icons_flutter/feather_icons_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:hijrah/models/index.dart';
 
 class SurahItem extends StatelessWidget {
   const SurahItem({
     Key key,
+    this.surah,
   }) : super(key: key);
+
+  final Surah surah;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Navigator.pushNamed(context, '/Quran/Detail');
+        Navigator.pushNamed(context, '/Quran/Detail', arguments: surah);
       },
       child: Container(
         padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
@@ -23,7 +27,7 @@ class SurahItem extends StatelessWidget {
                 Container(
                   width: 124,
                   child: Text(
-                    'الفاتحة',
+                    surah.asma,
                     style: Theme.of(context)
                         .textTheme
                         .display1
@@ -35,11 +39,11 @@ class SurahItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      '1. Al Fatihah',
+                      "${surah.nomor}. ${surah.nama}",
                       style: Theme.of(context).textTheme.display2,
                     ),
                     Text(
-                      'Pembukaan',
+                      surah.arti,
                       style: Theme.of(context)
                           .textTheme
                           .body1

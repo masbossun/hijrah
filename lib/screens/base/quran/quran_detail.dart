@@ -1,51 +1,100 @@
+import 'package:after_init/after_init.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:hijrah/models/index.dart';
+import 'package:hijrah/utils/fetch.dart';
 import 'package:hijrah/widgets/styled_underline.dart';
 import 'package:hijrah/widgets/topbar.dart';
 
-class QuranDetail extends StatelessWidget {
+class QuranDetail extends StatefulWidget {
+  @override
+  _QuranDetailState createState() => _QuranDetailState();
+}
+
+class _QuranDetailState extends State<QuranDetail>
+    with AfterInitMixin<QuranDetail> {
+  Surah _surah;
+  List<Ayat> _ayat;
+  bool loading = false;
+
+  @override
+  void didInitState() {
+    setState(() {
+      _surah = ModalRoute.of(context).settings.arguments;
+      loading = true;
+    });
+    _getAllAyat(int.parse(_surah.nomor));
+  }
+
+  void _getAllAyat(int surahNumber) async {
+    List<Ayat> ayat = await Webservice().load(Ayat.get(surahNumber));
+    setState(() {
+      _ayat = ayat;
+      loading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Topbar(
         title: null,
       ),
-      body: ListView(
+      body: loading
+          ? Container(
+              child: Text("Loading..."),
+            )
+          : ListView.builder(
+              itemCount: _ayat.length + 1,
+              itemBuilder: (BuildContext context, int index) {
+                if (index == 0) {
+                  return SurahInfo(surah: _surah);
+                }
+                index -= 1;
+
+                return AyahItem(
+                    ayat: _ayat[index], cropBismillah: _surah.nomor != "1");
+              },
+            ),
+    );
+  }
+}
+
+class SurahInfo extends StatelessWidget {
+  const SurahInfo({Key key, @required this.surah}) : super(key: key);
+
+  final Surah surah;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height - kToolbarHeight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            height: MediaQuery.of(context).size.height - kToolbarHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: QuranDetailHeader(
-                    surahName: 'Al Fatihah',
-                    surahNameMeaning: 'Pembukaan',
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  margin: const EdgeInsets.symmetric(vertical: 32),
-                  child: QuranDetailInfo(
-                      ayah: 7, type: 'Mekah', order: 5, ruku: 1),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  margin: const EdgeInsets.symmetric(vertical: 16),
-                  child: QuranDescription(
-                    description:
-                        '''Surat Al Faatihah (Pembukaan) yang diturunkan di Mekah dan terdiri dari 7 ayat adalah surat yang pertama-tama diturunkan dengan lengkap  diantara surat-surat yang ada dalam Al Quran dan termasuk golongan surat Makkiyyah. Surat ini disebut Al Faatihah (Pembukaan), karena dengan surat inilah dibuka dan dimulainya Al Quran. Dinamakan Ummul Quran (induk Al Quran) atau Ummul Kitaab (induk Al Kitaab) karena dia merupakan induk dari semua isi Al Quran, dan karena itu diwajibkan membacanya pada tiap-tiap sembahyang.
-Dinamakan pula As Sab'ul matsaany (tujuh yang berulang-ulang) karena ayatnya tujuh dan dibaca berulang-ulang dalam sholat.''',
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            margin: const EdgeInsets.only(bottom: 8),
+            child: QuranDetailHeader(
+              surahName: surah.nama,
+              surahNameMeaning: surah.arti,
             ),
           ),
-          AyahItem(),
-          AyahItem(),
-          AyahItem(),
-          AyahItem(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(vertical: 32),
+            child: QuranDetailInfo(
+              ayah: surah.ayat,
+              type: surah.type,
+              order: surah.urut,
+              ruku: surah.rukuk,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            child: QuranDescription(description: surah.keterangan),
+          ),
         ],
       ),
     );
@@ -55,7 +104,12 @@ Dinamakan pula As Sab'ul matsaany (tujuh yang berulang-ulang) karena ayatnya tuj
 class AyahItem extends StatelessWidget {
   const AyahItem({
     Key key,
+    this.ayat,
+    this.cropBismillah,
   }) : super(key: key);
+
+  final Ayat ayat;
+  final bool cropBismillah;
 
   @override
   Widget build(BuildContext context) {
@@ -74,16 +128,18 @@ class AyahItem extends StatelessWidget {
             ),
             padding: EdgeInsets.fromLTRB(32, 8, 32, 8),
             child: Text(
-              '1',
+              ayat.nomor,
               style: Theme.of(context).textTheme.display2,
             ),
           ),
           Container(
-            alignment: Alignment(1, 0),
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            margin: EdgeInsets.only(bottom: 16),
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            margin: EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              'بِسۡمِ ٱللهِ ٱلرَّحۡمَـٰنِ ٱلرَّحِيمِ',
+              ayat.nomor == "1" && cropBismillah
+                  ? ayat.ar.substring(38, ayat.ar.length)
+                  : ayat.ar,
               style: Theme.of(context)
                   .textTheme
                   .display1
@@ -93,11 +149,13 @@ class AyahItem extends StatelessWidget {
           ),
           Container(
             alignment: Alignment(1, 0),
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Dengan menyebut nama Allah yang maha pengasih lagi maha penyayang',
-              style: Theme.of(context).textTheme.body1,
-              textAlign: TextAlign.end,
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Html(
+              data: ayat.id,
+              defaultTextStyle: Theme.of(context).textTheme.body1,
+              customTextAlign: (dynamic any) {
+                return TextAlign.end;
+              },
             ),
           )
         ],
@@ -121,10 +179,10 @@ class QuranDescription extends StatelessWidget {
           'Keterangan',
           style: Theme.of(context).textTheme.display2,
         ),
-        Text(
-          description,
-          style: Theme.of(context).textTheme.body1,
-        ),
+        Html(
+          data: description,
+          defaultTextStyle: Theme.of(context).textTheme.body1,
+        )
       ],
     );
   }
@@ -140,8 +198,8 @@ class QuranDetailInfo extends StatelessWidget {
   }) : super(key: key);
 
   final int ayah;
-  final int order;
-  final int ruku;
+  final String order;
+  final String ruku;
   final String type;
 
   @override

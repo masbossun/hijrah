@@ -1,0 +1,10 @@
+# Rest Client
+@baseUrl = https://al-quran-8d642.firebaseio.com
+
+
+# GET {{baseUrl}}/data.json
+# Accept: application/json
+
+
+GET {{baseUrl}}/surat/2.json
+Accept: application/json
