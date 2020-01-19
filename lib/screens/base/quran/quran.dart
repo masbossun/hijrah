@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hijrah/models/chapter.dart';
 import 'package:hijrah/models/index.dart';
 import 'package:hijrah/screens/base/quran/widgets/featured_surah_card.dart';
 import 'package:hijrah/screens/base/quran/widgets/sort_button.dart';
