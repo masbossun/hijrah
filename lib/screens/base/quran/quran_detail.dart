@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:after_init/after_init.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -5,6 +7,7 @@ import 'package:hijrah/models/index.dart';
 import 'package:hijrah/utils/fetch.dart';
 import 'package:hijrah/widgets/styled_underline.dart';
 import 'package:hijrah/widgets/topbar.dart';
+import 'package:rive/rive.dart';
 
 class QuranDetail extends StatefulWidget {
   @override
@@ -16,13 +19,12 @@ class _QuranDetailState extends State<QuranDetail>
   Surah _surah;
   List<Ayat> _ayat;
   bool loading = false;
+  bool showFAB = false;
 
   @override
   void didInitState() {
-    setState(() {
-      _surah = ModalRoute.of(context).settings.arguments;
-      loading = true;
-    });
+    _surah = ModalRoute.of(context).settings.arguments;
+    loading = true;
     _getAllAyat(int.parse(_surah.nomor));
   }
 
@@ -31,6 +33,7 @@ class _QuranDetailState extends State<QuranDetail>
     setState(() {
       _ayat = ayat;
       loading = false;
+      showFAB = true;
     });
   }
 
@@ -41,8 +44,14 @@ class _QuranDetailState extends State<QuranDetail>
         title: null,
       ),
       body: loading
-          ? Container(
-              child: Text("Loading..."),
+          ? Center(
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                child: Rive(
+                  filename: 'assets/animations/loading.flr',
+                  animation: 'Artboard',
+                ),
+              ),
             )
           : ListView.builder(
               itemCount: _ayat.length + 1,
@@ -53,9 +62,25 @@ class _QuranDetailState extends State<QuranDetail>
                 index -= 1;
 
                 return AyahItem(
-                    ayat: _ayat[index], cropBismillah: _surah.nomor != "1");
+                  ayat: _ayat[index],
+                  cropBismillah: _surah.nomor != "1",
+                );
               },
             ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Visibility(
+        visible: showFAB,
+        child: FloatingActionButton.extended(
+          onPressed: () {},
+          label: Text(
+            "Baca ${_surah.nama}",
+            style: Theme.of(context)
+                .textTheme
+                .display3
+                .copyWith(color: Colors.black),
+          ),
+        ),
+      ),
     );
   }
 }
